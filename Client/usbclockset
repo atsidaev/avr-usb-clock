@@ -49,9 +49,11 @@ then
 				# sleep a little if error
 				sleep 1
 			done
-		fi
 
-		exit
+			index=$(($index + 1))
+		else
+			break # exit when all commands executed
+		fi
 	done
 	
 	rm $LOCKFILE
