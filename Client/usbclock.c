@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define CHAR_WAIT_TIMEOUT 0x1FFFF
+
 int fd;
 
 int send(char ch)
@@ -20,8 +22,12 @@ int send(char ch)
 	
 	// Wait until char appear
 	
-	while (n <= 0)
+	int counter = 0; /* Timeout (kinda) to prevent infinite loop */
+	while (n <= 0 && counter++ < CHAR_WAIT_TIMEOUT)
 		n = read(fd, buf, sizeof(buf));
+
+	if (counter == CHAR_WAIT_TIMEOUT)
+		return 0;
 
 	// Wait until chars dissapear
 
