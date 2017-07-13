@@ -3,6 +3,8 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 
+#include "SevenSegmentArray/SevenSegmentArray.h"
+
 #define bool char
 #define TRUE 1
 #define FALSE 0
@@ -25,19 +27,8 @@
 #define MESSAGES_COUNT 5
 #define TIMESLOT_COUNT 10
 
-const unsigned char letters_anc[] = { ~0x40, ~0x20, ~0x10, ~0x08 };
-
-const unsigned char ascii_maskp[] PROGMEM = 
-{
-  0x00, 0x86, 0x22, 0x7E, 0x7B, 0x63, 0x7E, 0x02,  /* !"#$%&'*/
-  0x39, 0x0F, 0x63, 0x70, 0x80, 0x40, 0x80, 0x52,  /*()*+,-./*/
-  0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07,  /*01234567*/
-  0x7F, 0x6F, 0x00, 0x00, 0x58, 0x48, 0x4C, 0xA7,  /*89:;<=>?*/
-  0x5C, 0x77, 0x7C, 0x39, 0x5E, 0x79, 0x71, 0x3D,  /*@ABCDEFG*/
-  0x76, 0x06, 0x1E, 0x72, 0x38, 0x55, 0x54, 0x3F,  /*HIJKLMNO*/
-  0x73, 0x67, 0x50, 0x6D, 0x78, 0x3E, 0x1C, 0x1D,  /*PQRSTUVW*/
-  0x49, 0x6E, 0x5b, 0x39, 0x64, 0x0F, 0x23, 0x08   /*XYZ[\]^_*/
-};
+unsigned char pins[] = { 3, 4, 5, 6 };
+SevenSegmentArray seg(COMMON_CATHODE, &PORTD, &PORTB, pins, sizeof(pins));
 
 volatile char messages[MESSAGES_COUNT][4];
 
@@ -131,16 +122,15 @@ void print(volatile char* str, bool is_num, bool show_dots)
 	for (unsigned char i = 0; i < 4; i++)
 	{
 		char ascii = is_num ? (str[i] < 10 && str[i] >= 0 ? str[i] + '0' : ' ') : (str[i] >= 0x20 && str[i] < 0x60 ? str[i] : ' ');
-		ascii = pgm_read_byte(&(ascii_maskp[ascii - ' ']));
-		PORTB = ascii;
+		seg.output_segments(ascii);
 		for (int j = 0; j < 100; j++)
 		{
 			for (int k = 0; k < BRIGHTNESS; k++) // loop for reducing led intensivity. Set BRIGHTNESS to 0 to avoid.
 			{
-				// Magic:
-				PORTD |= letters_anc[j % 4] ^ 0xFF; // set one of anchors to 1. 
+				// TODO: reimplement this magic in 7seg lib:
+				//PORTD |= letters_anc[j % 4] ^ 0xFF; // set one of anchors to 1. 
 			}
-			PORTD &= letters_anc[i]; // set needed anchor to 1
+			seg.select_digit(i);
 			
 			if (!show_dots)
 				PORTA &= ~(DOT_UPPER | DOT_BOTTOM);
@@ -238,8 +228,6 @@ int main(void)
 	sei();
 	
 	DDRA = DOT_BOTTOM | DOT_UPPER; // PA0&PA1 - outputs
-	DDRB = 0xFF; // outputs
-	DDRD = 0xFE; // outputs (except RX)
 
 	while (1) {
 		int i = 0;

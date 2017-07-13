@@ -1,0 +1,3 @@
+[submodule "Hardware/Firmware/SevenSegmentArray"]
+	path = Hardware/Firmware/SevenSegmentArray
+	url = https://github.com/atsidaev/SevenSegmentArray
